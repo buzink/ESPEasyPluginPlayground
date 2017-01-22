@@ -80,6 +80,7 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
           n = digitalRead(Settings.TaskDevicePin2[event->TaskIndex]);
           if ((encoder0PinALast == LOW) && (n == HIGH)) 
           {
+            UserVar[event->BaseVarIndex + 1] = 0;
             if (digitalRead(Settings.TaskDevicePin3[event->TaskIndex]) == LOW)
             {
               UserVar[event->BaseVarIndex + 1]--;
@@ -92,6 +93,8 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
             //Serial.print ("/");
           } 
           encoder0PinALast = n;
+          sendData(event);
+          success = true;
         }
         break;        
       }
