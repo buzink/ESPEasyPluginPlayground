@@ -11,8 +11,10 @@
 boolean Plugin_198(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
-  static byte switchstate[TASKS_MAX];
-  static byte outputstate[TASKS_MAX];
+  static byte Plugin_198_switchstate[TASKS_MAX];
+  static byte Plugin_198_outputstate[TASKS_MAX];
+  static int Plugin_198_n;
+  static int Plugin_198_encoder0PinALast;
 
   switch (function)
   {
@@ -48,12 +50,12 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_INIT:
       { // 1=switch, 2=rotary pin A, 3=rotary pin B
-        Plugin_198_init = true;
+        //Plugin_198_init = true;
         pinMode(Settings.TaskDevicePin1[event->TaskIndex], INPUT_PULLUP);
         pinMode(Settings.TaskDevicePin2[event->TaskIndex], INPUT_PULLUP);
         pinMode(Settings.TaskDevicePin3[event->TaskIndex], INPUT_PULLUP);
-        attachInterrupt(Settings.TaskDevicePin1[event->TaskIndex], Plugin_198_interrupt1, FALLING);
-        attachInterrupt(Settings.TaskDevicePin2[event->TaskIndex], Plugin_198_interrupt2, FALLING);
+        //attachInterrupt(Settings.TaskDevicePin1[event->TaskIndex], Plugin_198_interrupt1, FALLING);
+        //attachInterrupt(Settings.TaskDevicePin2[event->TaskIndex], Plugin_198_interrupt2, FALLING);
         //attachInterrupt(Settings.TaskDevicePin3[event->TaskIndex], Plugin_198_interrupt3, FALLING);
         success = true;
         break;
@@ -61,24 +63,22 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_TEN_PER_SECOND:
       {
-        if (Plugin_198_init)
-        {
           //switch code goes here
           byte state = digitalRead(Settings.TaskDevicePin1[event->TaskIndex]);
-          if (state != switchstate[event->TaskIndex])
+          if (state != Plugin_198_switchstate[event->TaskIndex])
           {
-            switchstate[event->TaskIndex] = state;
-            byte currentOutputState = outputstate[event->TaskIndex];
+            Plugin_198_switchstate[event->TaskIndex] = state;
+            byte currentOutputState = Plugin_198_outputstate[event->TaskIndex];
             if (state == 1)
-              outputstate[event->TaskIndex] = !outputstate[event->TaskIndex];
+              Plugin_198_outputstate[event->TaskIndex] = !Plugin_198_outputstate[event->TaskIndex];
             sendData(event);
             success = true;
             break;          
           }
           
           //rotary encoder code goes here, from http://playground.arduino.cc/Main/RotaryEncoders#Example1; see below for interrupt code
-          n = digitalRead(Settings.TaskDevicePin2[event->TaskIndex]);
-          if ((encoder0PinALast == LOW) && (n == HIGH)) 
+          Plugin_198_n = digitalRead(Settings.TaskDevicePin2[event->TaskIndex]);
+          if ((Plugin_198_encoder0PinALast == LOW) && (Plugin_198_n == HIGH)) 
           {
             UserVar[event->BaseVarIndex + 1] = 0;
             if (digitalRead(Settings.TaskDevicePin3[event->TaskIndex]) == LOW)
@@ -92,11 +92,10 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
             //Serial.print (encoder0Pos);
             //Serial.print ("/");
           } 
-          encoder0PinALast = n;
+          Plugin_198_encoder0PinALast = Plugin_198_n;
           sendData(event);
           success = true;
-        }
-        break;        
+          break;        
       }
 
     case PLUGIN_READ:
