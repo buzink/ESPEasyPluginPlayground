@@ -2,6 +2,8 @@
 //##################### Plugin 198: Rotary encoder (under development) ######################
 //#######################################################################################################
 
+//Connect pin 1 and 3 to pull-up pins. Connect pin 2 to GROUND. 
+
 #define PLUGIN_198
 #define PLUGIN_ID_198         198
 #define PLUGIN_NAME_198       "Rotary encoder"
@@ -10,8 +12,8 @@
 boolean Plugin_198(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
-  static int Plugin_198_n;
-  static int Plugin_198_encoder0PinALast;
+  volatile int Plugin_198_lastEncoded = 0;
+  volatile long Plugin_198_encoderValue = 0;
 
   switch (function)
   {
@@ -41,8 +43,7 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
       }
 
     case PLUGIN_INIT:
-      { // 1=rotary pin A, 2=rotary pin B
-        //Plugin_198_init = true;
+      {
         pinMode(Settings.TaskDevicePin1[event->TaskIndex], INPUT_PULLUP);
         pinMode(Settings.TaskDevicePin2[event->TaskIndex], INPUT_PULLUP);
         //attachInterrupt(Settings.TaskDevicePin1[event->TaskIndex], Plugin_198_interrupt1, FALLING);
@@ -52,26 +53,34 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_TEN_PER_SECOND:
       {
-          //rotary encoder code goes here, from http://playground.arduino.cc/Main/RotaryEncoders#Example1; see below for interrupt code
-          Plugin_198_n = digitalRead(Settings.TaskDevicePin1[event->TaskIndex]);
-          if ((Plugin_198_encoder0PinALast == LOW) && (Plugin_198_n == HIGH)) 
+          int Plugin_198_MSB = digitalRead(Settings.TaskDevicePin1[event->TaskIndex]); //MSB = most significant bit
+          int Plugin_198_LSB = digitalRead(Settings.TaskDevicePin2[event->TaskIndex]); //LSB = least significant bit
+
+          int Plugin_198_encoded = (Plugin_198_MSB << 1) |Plugin_198_LSB; //converting the 2 pin value to single number
+          int Plugin_198_sum  = (Plugin_198_lastEncoded << 2) | Plugin_198_encoded; //adding it to the previous encoded value
+          
+          Plugin_198_lastEncoded = Plugin_198_encoded; //store this value for next time
+
+          if (Plugin_198_sum == 0b1101 || Plugin_198_sum == 0b0100 || Plugin_198_sum == 0b0010 || Plugin_198_sum == 0b1011)
+          { 
+            Plugin_198_encoderValue ++; //CW
+            UserVar[event->BaseVarIndex] = Plugin_198_encoderValue;
+            sendData(event);
+            success = true;
+            break;
+          }
+          else if (Plugin_198_sum == 0b1110 || Plugin_198_sum == 0b0111 || Plugin_198_sum == 0b0001 || Plugin_198_sum == 0b1000)
           {
-            UserVar[event->BaseVarIndex] = 0;
-            if (digitalRead(Settings.TaskDevicePin2[event->TaskIndex]) == LOW)
-            {
-              UserVar[event->BaseVarIndex]--;
-            } 
-            else 
-            {
-              UserVar[event->BaseVarIndex]++;
-            }
-            //Serial.print (UserVar[event->BaseVarIndex]);
-            //Serial.print ("/");
-          } 
-          Plugin_198_encoder0PinALast = Plugin_198_n;
-          sendData(event);
-          success = true;
-          break;        
+            Plugin_198_encoderValue --; //CCW
+            UserVar[event->BaseVarIndex] = Plugin_198_encoderValue;
+            sendData(event);
+            success = true;
+            break;
+          }
+          else
+          {
+            break;
+          }    
       }
 
     case PLUGIN_READ:
@@ -87,5 +96,3 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
   }
   return success;
 }
-
-//interrupt not implemented yet
