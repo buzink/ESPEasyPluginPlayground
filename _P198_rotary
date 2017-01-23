@@ -3,7 +3,7 @@
 //#######################################################################################################
 
 #define PLUGIN_198
-#define PLUGIN_ID_198         1
+#define PLUGIN_ID_198         198
 #define PLUGIN_NAME_198       "Rotary encoder"
 #define PLUGIN_VALUENAME1_198 "Rotation"
 
@@ -18,17 +18,13 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
     case PLUGIN_DEVICE_ADD:
       {
         Device[++deviceCount].Number = PLUGIN_ID_198;
-        Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
-        Device[deviceCount].VType = SENSOR_TYPE_SWITCH;
+        Device[deviceCount].Type = DEVICE_TYPE_DUAL;
+        Device[deviceCount].VType = SENSOR_TYPE_SINGLE;
         Device[deviceCount].Ports = 0;
         Device[deviceCount].PullUpOption = true;
-        Device[deviceCount].InverseLogicOption = true;
         Device[deviceCount].FormulaOption = false;
         Device[deviceCount].ValueCount = 1;
         Device[deviceCount].SendDataOption = true;
-        Device[deviceCount].TimerOption = true;
-        Device[deviceCount].TimerOptional = true;
-        Device[deviceCount].GlobalSyncOption = true;
         break;
       }
 
@@ -86,13 +82,6 @@ boolean Plugin_198(byte function, struct EventStruct *event, String& string)
         log += UserVar[event->BaseVarIndex];
         addLog(LOG_LEVEL_INFO, log);
         success = true;
-        break;
-      }
-
-    case PLUGIN_TIMER_IN:
-      {
-        digitalWrite(event->Par1, event->Par2);
-        setPinState(PLUGIN_ID_198, event->Par1, PIN_MODE_OUTPUT, event->Par2);
         break;
       }
   }
